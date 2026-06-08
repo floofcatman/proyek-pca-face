@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pengenalan Wajah Berbasis PCA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .drag-active { border-color: #3b82f6; background-color: #eff6ff; }
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #ffffff;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col items-center justify-center p-6">
+
+    <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- Header -->
+        <div class="bg-blue-600 p-6 text-center">
+            <h1 class="text-2xl font-bold text-white mb-2">Sistem Pengenalan Wajah</h1>
+            <p class="text-blue-100 text-sm">Berbasis Algoritma Principal Component Analysis (Eigenfaces)</p>
+        </div>
+
+        <div class="p-8">
+            <!-- Form Upload -->
+            <div id="drop-zone" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer transition-colors duration-200 hover:bg-gray-50 mb-6">
+                <div class="flex flex-col items-center">
+                    <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-gray-600 font-medium mb-1">Tarik dan lepas foto wajah di sini</p>
+                    <p class="text-sm text-gray-400 mb-4">atau klik untuk menelusuri file komputer Anda</p>
+                    <button type="button" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg shadow-sm hover:bg-gray-50 text-sm font-medium transition-colors">
+                        Pilih Gambar
+                    </button>
+                    <input type="file" id="file-input" class="hidden" accept="image/jpeg, image/png, image/jpg">
+                </div>
+            </div>
+
+            <!-- Image Preview Area -->
+            <div id="preview-container" class="hidden flex flex-col items-center mb-6">
+                <p class="text-sm font-semibold text-gray-500 mb-2 uppercase tracking-wide">Pratinjau Gambar</p>
+                <img id="image-preview" class="w-48 h-48 object-cover rounded-xl shadow-md border border-gray-200" src="" alt="Pratinjau Foto">
+            </div>
+
+            <!-- Action Button -->
+            <button id="analyze-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled>
+                <span id="btn-text">Mulai Analisis Wajah</span>
+                <div id="btn-spinner" class="spinner hidden"></div>
+            </button>
+
+            <!-- Error Notification -->
+            <div id="error-alert" class="hidden mt-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <p id="error-message" class="text-sm text-red-700 font-medium">Terjadi kesalahan.</p>
+                </div>
+            </div>
+
+            <!-- Result Section -->
+            <div id="result-section" class="hidden mt-8 pt-6 border-t border-gray-100">
+                <h3 class="text-lg font-bold text-gray-800 text-center mb-6">Hasil Identifikasi</h3>
+                
+                <div class="bg-gray-50 rounded-xl p-6 shadow-inner border border-gray-200">
+                    <div class="flex flex-col items-center text-center">
+                        <div id="match-status-icon" class="w-16 h-16 rounded-full flex items-center justify-center mb-4">
+                            <!-- Icon disuntikkan oleh JS -->
+                        </div>
+                        <h4 id="match-name" class="text-2xl font-bold text-gray-900 mb-1">Nama Orang</h4>
+                        <p id="match-message" class="text-gray-500 text-sm mb-6">Keterangan hasil pengenalan</p>
+                        
+                        <div class="w-full max-w-xs">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-medium text-gray-600">Tingkat Kemiripan (Cosine)</span>
+                                <span id="match-score-text" class="font-bold text-blue-600">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="match-score-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2 text-left">*Batas minimum pengenalan adalah 80%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-8 text-center text-gray-400 text-sm">
+        <p>&copy; Sistem Cerdas Berbasis Eigenfaces.</p>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const previewContainer = document.getElementById('preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const errorAlert = document.getElementById('error-alert');
+        const errorMessage = document.getElementById('error-message');
+        const resultSection = document.getElementById('result-section');
+        const btnText = document.getElementById('btn-text');
+        const btnSpinner = document.getElementById('btn-spinner');
+        
+        let selectedFile = null;
+
+        // Klik untuk Upload
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Penanganan Drag and Drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-active');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-active');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-active');
+            if (e.dataTransfer.files.length > 0) {
+                handleFileSelection(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                handleFileSelection(this.files[0]);
+            }
+        });
+
+        function handleFileSelection(file) {
+            // Validasi file gambar
+            if (!file.type.startsWith('image/')) {
+                showError('Mohon unggah file dengan format gambar (JPG/PNG).');
+                return;
+            }
+
+            selectedFile = file;
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+                analyzeBtn.disabled = false;
+                
+                // Reset states
+                errorAlert.classList.add('hidden');
+                resultSection.classList.add('hidden');
+            }
+            
+            reader.readAsDataURL(file);
+        }
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorAlert.classList.remove('hidden');
+            resultSection.classList.add('hidden');
+        }
+
+        // Proses Analisis (Memanggil API Vercel/Flask)
+        analyzeBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            // Loading state
+            analyzeBtn.disabled = true;
+            btnText.textContent = "Sedang memproses...";
+            btnSpinner.classList.remove('hidden');
+            errorAlert.classList.add('hidden');
+            resultSection.classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || "Gagal menghubungi server.");
+                }
+
+                tampilkanHasil(result);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                // Restore button
+                analyzeBtn.disabled = false;
+                btnText.textContent = "Mulai Analisis Wajah";
+                btnSpinner.classList.add('hidden');
+            }
+        });
+
+        function tampilkanHasil(data) {
+            resultSection.classList.remove('hidden');
+            
+            const matchNameEl = document.getElementById('match-name');
+            const matchMessageEl = document.getElementById('match-message');
+            const matchScoreTextEl = document.getElementById('match-score-text');
+            const matchScoreBarEl = document.getElementById('match-score-bar');
+            const iconContainer = document.getElementById('match-status-icon');
+
+            const scorePercent = (data.score * 100).toFixed(1);
+            
+            // Logika UI Berdasarkan hasil threshold dari Backend
+            if (data.match !== "Tidak dikenal") {
+                // Berhasil dikenali
+                iconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-green-100 text-green-600";
+                iconContainer.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                matchNameEl.textContent = data.match;
+                matchNameEl.className = "text-2xl font-bold text-green-700 mb-1";
+                matchScoreBarEl.className = "h-2.5 rounded-full transition-all duration-1000 bg-green-500";
+            } else {
+                // Tidak dikenal
+                iconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-red-100 text-red-500";
+                iconContainer.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+                matchNameEl.textContent = "Tidak Dikenal";
+                matchNameEl.className = "text-2xl font-bold text-red-600 mb-1";
+                matchScoreBarEl.className = "h-2.5 rounded-full transition-all duration-1000 bg-red-500";
+            }
+
+            matchMessageEl.textContent = data.message;
+            
+            // Animasi bar persentase
+            setTimeout(() => {
+                matchScoreTextEl.textContent = `${scorePercent}%`;
+                matchScoreBarEl.style.width = `${Math.max(0, Math.min(100, scorePercent))}%`;
+            }, 100);
+        }
+    </script>
+</body>
+</html>
