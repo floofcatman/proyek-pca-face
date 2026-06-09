@@ -7,7 +7,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 app = Flask(__name__, template_folder='../templates')
 
-
+# --- TANGANI ERROR 404 & 500 SECARA GLOBAL ---
+# Ini mencegah Vercel mengirim halaman HTML yang merusak frontend
 @app.errorhandler(404)
 def page_not_found(e):
     return jsonify({"error": "Jalur API tidak ditemukan. Pastikan backend sudah diperbarui."}), 404
@@ -60,8 +61,12 @@ def detect_and_crop(img):
 def index():
     return render_template('index.html')
 
+# Tambahkan penangkap rute dinamis agar kebal terhadap perubahan path dari Vercel
 @app.route('/compare', methods=['POST'])
-def compare_faces():
+@app.route('/api/compare', methods=['POST'])
+@app.route('/api/index.py', methods=['POST'])
+@app.route('/<path:any_path>', methods=['POST'])
+def compare_faces(any_path=None):
     if not is_model_ready:
         return jsonify({"error": "Model PCA belum siap. Pastikan model_wajah.pkl tersedia."}), 500
 
