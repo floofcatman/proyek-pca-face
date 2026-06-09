@@ -361,7 +361,7 @@
             formData.append('lang', currentLang);
 
             try {
-                const response = await fetch('/predict', { method: 'POST', body: formData });
+                const response = await fetch('/compare', { method: 'POST', body: formData });
                 const res = await response.json();
 
                 if (!response.ok) throw new Error(res.error || "Gagal melakukan analisis.");
@@ -395,7 +395,8 @@
 
             const scorePercent = (data.similarity * 100).toFixed(1);
 
-            if (data.is_same) {
+            // UBAH: data.is_same menjadi data.is_match
+            if (data.is_match) {
                 dBlock.className = "flex items-center gap-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20";
                 dIcon.className = "w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-500 text-white shrink-0 shadow-sm";
                 dIcon.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
@@ -413,8 +414,9 @@
                 simBar.className = "h-2 rounded-full transition-all duration-1000 bg-gradient-to-r from-rose-500 to-orange-500";
             }
 
-            // Update parameters
-            document.getElementById('metric-dist').textContent = data.euclidean_dist.toFixed(3);
+            // UBAH: data.euclidean_dist menjadi data.distance
+            // Karena dari backend index.py sudah dikirim dalam bentuk number (round), toFixed akan berjalan normal.
+            document.getElementById('metric-dist').textContent = data.distance.toFixed(3); 
             document.getElementById('metric-thresh').textContent = data.threshold.toFixed(2);
             document.getElementById('metric-conf').textContent = data.confidence;
 
