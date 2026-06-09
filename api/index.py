@@ -7,6 +7,15 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 app = Flask(__name__, template_folder='../templates')
 
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return jsonify({"error": "Jalur API tidak ditemukan. Pastikan backend sudah diperbarui."}), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return jsonify({"error": "Terjadi kesalahan internal di server backend Vercel."}), 500
+
 cascade_path = os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml')
 face_cascade = cv2.CascadeClassifier(cascade_path)
 
