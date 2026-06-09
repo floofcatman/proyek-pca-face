@@ -37,10 +37,27 @@ if os.path.exists(model_path):
         print(f"Error memuat model: {str(e)}")
 
 def preprocess_face(face_img):
+    # 1. Konversi ke Grayscale jika belum
     if len(face_img.shape) == 3:
         face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2GRAY)
+        
+    # 2. Resize ke ukuran seragam
     face_resized = cv2.resize(face_img, IMAGE_SIZE)
-    return (face_resized.astype('float32') / 255.0).flatten()
+    
+    # 3. Histogram Equalization: Mengatasi masalah pencahayaan yang berbeda
+    face_eq = cv2.equalizeHist(face_resized)
+    
+    # 4. Masking Oval/Lingkaran: Menghapus noise dari background
+    mask = np.zeros(IMAGE_SIZE, dtype=np.uint8)
+    center = (IMAGE_SIZE[0] // 2, IMAGE_SIZE[1] // 2)
+    radius = min(center[0], center[1])
+    cv2.circle(mask, center, radius, 255, -1)
+    
+    # Terapkan mask (area di luar lingkaran akan menjadi hitam pekat / 0)
+    face_masked = cv2.bitwise_and(face_eq, face_eq, mask=mask)
+    
+    # 5. Normalisasi dan Flatten menjadi array 1D
+    return (face_masked.astype('float32') / 255.0).flatten()
 
 def detect_and_crop(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -55,7 +72,6 @@ def detect_and_crop(img):
 def index():
     return render_template('index.html')
 
-# Menangkap semua jenis rute POST dari Vercel
 @app.route('/compare', methods=['POST'])
 @app.route('/api/compare', methods=['POST'])
 @app.route('/api/index.py', methods=['POST'])
@@ -96,7 +112,6 @@ def compare_faces(any_path=None):
         cos_sim = float(cosine_similarity([vec1], [vec2])[0][0])
         eucl_dist = float(np.linalg.norm(vec1 - vec2))
         
-        # Casting ke tipe boolean standar Python agar aman dikirim sebagai JSON
         is_match = bool(cos_sim >= SIMILARITY_THRESHOLD)
         
         if cos_sim >= 0.88: confidence = "Tinggi"
