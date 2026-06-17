@@ -6,13 +6,13 @@ import os
 from PIL import Image
 from sklearn.metrics.pairwise import cosine_similarity
 
-# Konfigurasi Halaman UI
+
 st.set_page_config(page_title="BioID - Face Verification", page_icon="🕵️", layout="centered")
 
 IMAGE_SIZE = (100, 100)
 SIMILARITY_THRESHOLD = 0.80
 
-# Load Model PCA & Haar Cascade (di-cache agar tidak loading ulang terus)
+
 @st.cache_resource
 def load_models():
     cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
@@ -41,7 +41,7 @@ def preprocess_face(face_img):
     resized = cv2.resize(gray, IMAGE_SIZE)
     return (resized.astype('float32') / 255.0).flatten()
 
-# --- BAGIAN ANTARMUKA (UI) STREAMLIT ---
+
 st.title("🕵️ BioID - Perbandingan Wajah")
 st.markdown("Unggah foto masa kecil & foto masa sekarang untuk dibandingkan menggunakan algoritma Eigenfaces (PCA).")
 
@@ -72,7 +72,7 @@ if file1 and file2:
             img1_arr = np.array(img1_pil)
             img2_arr = np.array(img2_pil)
             
-            # Deteksi & Potong Wajah
+          
             face1 = detect_and_crop(img1_arr)
             face2 = detect_and_crop(img2_arr)
             
