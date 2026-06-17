@@ -68,7 +68,7 @@ with col2:
 if file1 and file2:
     if st.button("🚀 Bandingkan Wajah", use_container_width=True):
         with st.spinner("Mengekstrak fitur matriks..."):
-            # Konversi gambar ke format numpy array untuk OpenCV
+       
             img1_arr = np.array(img1_pil)
             img2_arr = np.array(img2_pil)
             
@@ -81,19 +81,18 @@ if file1 and file2:
             elif face2 is None:
                 st.error("❌ Wajah tidak terdeteksi pada Foto 2.")
             else:
-                # Preprocessing
+         
                 flat1 = preprocess_face(face1)
                 flat2 = preprocess_face(face2)
                 
-                # Proyeksi PCA
+              
                 vec1 = pca_model.transform([flat1])[0]
                 vec2 = pca_model.transform([flat2])[0]
-                
-                # Kalkulasi Kemiripan
+               
                 cos_sim = float(cosine_similarity([vec1], [vec2])[0][0])
                 eucl_dist = float(np.linalg.norm(vec1 - vec2))
                 
-                # Menampilkan Hasil
+              
                 st.divider()
                 st.subheader("📊 Hasil Analisis")
                 
@@ -102,7 +101,7 @@ if file1 and file2:
                 else:
                     st.error(f"**BERBEDA ORANG.** Karakteristik wajah tidak cocok.")
                 
-                # Tampilkan Metrik
+             
                 m_col1, m_col2, m_col3 = st.columns(3)
                 m_col1.metric("Cosine Similarity", f"{cos_sim * 100:.1f}%")
                 m_col2.metric("Jarak Euclidean", f"{eucl_dist:.2f}")
